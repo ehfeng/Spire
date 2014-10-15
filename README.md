@@ -3,11 +3,11 @@ SQL search
 
 Setup
 -----
-1. Have brew installed
-2. Install python, pip, elasticsearch
+1. Clone this repo
+2. Install python, pip, elasticsearch, redis
 3. pip install virtualenv
-4. Pull down this repo
-5. Instantiate a virtual environment
-6. Run elasticsearch in the background
-7. `pip install -r requirements.txt`
-8. `python main.py`
+4. Instantiate a virtual environment
+5. Run `pip install -r requirements.txt`
+6. Start your redis, elasticsearch databases
+7. Run `python tasks.py`
+8. Run `python main.py`
