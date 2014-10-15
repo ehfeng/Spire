@@ -6,11 +6,13 @@
 # - UDFs (i.e. $DATE(0)) x
 # - Column and table aliases x
 # - joins (add join keyword)
-# - subqueries (recurse selectStmt)
+# - subqueries (recurse selectStmt) x
+# - support for expressions in columns (ex. col1 + col2)
+# - support for case statements
 #
 from pyparsing import Literal, CaselessLiteral, Word, Upcase, delimitedList, Optional, \
     Combine, Group, alphas, nums, alphanums, ParseException, Forward, oneOf, quotedString, \
-    ZeroOrMore, restOfLine, Keyword, FollowedBy
+    ZeroOrMore, restOfLine, Keyword, SkipTo, OneOrMore
 
 def test( str ):
     print(str,"->")
@@ -18,14 +20,12 @@ def test( str ):
         tokens = simpleSQL.parseString( str )
         print("tokens = ",        tokens)
         print("tokens.columns =", tokens.columns)
-        print("tokens.columns[0] =", [column[0] for column in tokens.columns])
         print("tokens.tables =",  tokens.tables)
         print("tokens.where =", tokens.where)
     except ParseException as err:
         print(" "*err.loc + "^\n" + err.msg)
         print(err)
     print()
-
 
 # define SQL tokens
 selectStmt = Forward()
@@ -34,9 +34,20 @@ fromToken   = Keyword("from", caseless=True)
 
 colIdent       = Word( alphas + "$", alphanums + "_$()" ).setName("column identifier")
 tableIdent     = Word( alphas, alphanums + "_$" ).setName("table identifier")
-columnName     = Group (Upcase( delimitedList( colIdent, ".", combine=True ) + Optional("as" + colIdent)) )
+columnName     = Group (Upcase( delimitedList( colIdent, ".", combine=True )
+                      + Optional(CaselessLiteral("as") + colIdent)) )
 columnNameList = Group( delimitedList( columnName ) )
 tableName      = Upcase( delimitedList( tableIdent, ".", combine=True ) )
+
+join_ = Keyword("join", caseless=True)
+ij_ = Keyword("inner join", caseless=True)
+loj_ = Keyword("left outer join", caseless=True)
+roj_ = Keyword("right outer join", caseless=True)
+foj_ = Keyword("full outer join", caseless=True)
+
+# joins
+#ZeroOrMore(SkipTo(join_ | ij_ | loj_ | roj_ | foj_) +
+#      (join_ | ij_ | loj_ | roj_ | foj_) + tableName.setResultsName( "tables" )) +
 
 whereExpression = Forward()
 and_ = Keyword("and", caseless=True)
@@ -57,16 +68,17 @@ whereCondition = Group(
     ( columnName + binop + columnRval ) |
     ( columnName + in_ + "(" + delimitedList( columnRval ) + ")" ) |
     ( columnName + in_ + "(" + selectStmt + ")" ) |
+    ( columnName + "between" + columnRval + "and" + columnRval) |
     ( "(" + whereExpression + ")" )
     )
-whereExpression << whereCondition + ZeroOrMore( ( and_ | or_ ) + whereExpression ) 
+whereExpression << whereCondition.setResultsName("where", listAllMatches=True) + ZeroOrMore( ( and_ | or_ ) + whereExpression ) 
 
 # define the grammar
 selectStmt      << ( selectToken + 
-                   ( '*' | columnNameList ).setResultsName( "columns" ) + 
+                   ( '*' | columnNameList.setResultsName("columns", listAllMatches=True) ) + 
                    fromToken + 
-                   tableName.setResultsName( "tables" ) + (FollowedBy("where") | Optional(Word(alphanums))) + 
-                   Optional( Group( CaselessLiteral("where") + whereExpression ), "" ).setResultsName("where") )
+                   ( tableName.setResultsName("tables", listAllMatches=True )  | ("(" + selectStmt + ")") ) +
+                   Optional(SkipTo(CaselessLiteral("where"), include=True, ignore = ")" + restOfLine) + whereExpression) )
 
 simpleSQL = selectStmt
 
@@ -74,8 +86,7 @@ simpleSQL = selectStmt
 oracleSqlComment = "--" + restOfLine
 simpleSQL.ignore( oracleSqlComment )
 
-
-test("SELECT a.col1, $DATE(0) as day from stephwang.test_table where day > 0")
+test( "SELECT A as a, B as b, C as c from (select * from INNERTABLE where innerx = 1 and innery = 2) abc where x = 1 and y = 2" )
 
 """test( "SELECT * from XYZZY, ABC" )
 test( "select * from SYS.XYZZY" )
