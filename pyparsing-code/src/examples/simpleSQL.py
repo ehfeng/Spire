@@ -35,6 +35,7 @@ tableName      = Upcase( delimitedList( ident, ".", combine=True ) )
 tableNameList  = Group( delimitedList( tableName ) )
 
 whereExpression = Forward()
+print("whereExpression = ", whereExpression, "/n")
 and_ = Keyword("and", caseless=True)
 or_ = Keyword("or", caseless=True)
 in_ = Keyword("in", caseless=True)
@@ -55,7 +56,9 @@ whereCondition = Group(
     ( columnName + in_ + "(" + selectStmt + ")" ) |
     ( "(" + whereExpression + ")" )
     )
+print("whereCondition = ", whereCondition, "/n")
 whereExpression << whereCondition + ZeroOrMore( ( and_ | or_ ) + whereExpression ) 
+print("whereExpression = ", whereExpression, "/n")
 
 # define the grammar
 selectStmt      << ( selectToken + 
@@ -72,7 +75,7 @@ simpleSQL.ignore( oracleSqlComment )
 
 
 test( "SELECT * from XYZZY, ABC" )
-test( "select * from SYS.XYZZY" )
+"""test( "select * from SYS.XYZZY" )
 test( "Select A from Sys.dual" )
 test( "Select A,B,C from Sys.dual" )
 test( "Select A, B, C from Sys.dual" )
@@ -83,7 +86,7 @@ test( "Select" )
 test( "Select &&& frox Sys.dual" )
 test( "Select A from Sys.dual where a in ('RED','GREEN','BLUE')" )
 test( "Select A from Sys.dual where a in ('RED','GREEN','BLUE') and b in (10,20,30)" )
-test( "Select A,b from table1,table2 where table1.id eq table2.id -- test out comparison operators" )
+test( "Select A,b from table1,table2 where table1.id eq table2.id -- test out comparison operators" )"""
 
 """
 Test output:
