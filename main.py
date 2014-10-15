@@ -6,6 +6,20 @@ import requests
 from flask import Flask, Blueprint, abort, jsonify, request, session
 from celery import Celery
 
+### Helper Functions ###
+
+def unicode_csv_reader(unicode_csv_data, dialect=csv.excel, **kwargs):
+    # csv.py doesn't do Unicode; encode temporarily as UTF-8:
+    csv_reader = csv.reader(utf_8_encoder(unicode_csv_data),
+                            dialect=dialect, **kwargs)
+    for row in csv_reader:
+        # decode UTF-8 back to Unicode, cell by cell:
+        yield [unicode(cell, 'utf-8') for cell in row]
+
+def utf_8_encoder(unicode_csv_data):
+    for line in unicode_csv_data:
+        yield line.encode('utf-8')
+
 def make_celery(app):
     celery = Celery(app.import_name, backend='redis://localhost:6379/0', broker='redis://localhost:6379/0')
     celery.conf.update(app.config)
@@ -22,20 +36,23 @@ app = Flask(__name__)
 celery = make_celery(app)
 es = Elasticsearch()
 
+### Celery Tasks ###
+
 @celery.task(name="task.upload_hive_queries")
 def upload_hive_queries(direct_link):
-    print "starting download"
     r = requests.get(direct_link)
-    print "finished download"
-    reader = csv.reader(StringIO.StringIO(r.text))
+    reader = unicode_csv_reader(StringIO.StringIO(r.text))
     headers = reader.next()
-    for row in reader:
-        print row
-    return headers
+    if headers == ['id', 'owner', 'name', 'parent_name', 'statement', 'start_ts', 'end_ts']:
+        return headers
+    else:
+        return False
+
+### Views ###
 
 @app.route("/")
 def main():
-    res = upload_hive_queries.delay('https://dl.dropboxusercontent.com/1/view/gi5xw1i74y4gvmr/Apps/Intercom%20Folder/weekly_actives/2014-10-05.csv')
+    res = upload_hive_queries.delay('https://dl.dropbox.com/s/je8k1xr9s2bk3w8/Hive%20Queries%20Sample.csv')
     return res.task_id
 
 @app.route("/<task_id>")
