@@ -1,3 +1,27 @@
 {% extends "base.html" %}
-{% block title %}Steph{% endblock %}
-{% block main %}This is the main template{% endblock %}
+{% block title %}Search{% endblock %}
+{% block main %}
+{{ name }}
+<form method="POST" action="">
+	<input style="width:500px" name="q" value="{{ q }}">
+</form>
+<table>
+	<tr>
+		<th>Name</th>
+		<th>Owner</th>
+		<th>Date</th>
+		<th>Parent</th>
+		<th>Statement</th>
+	</tr>
+	{% for query in queries %}
+	<tr>
+		<td>{{ query.name }}</td>
+		<td>{{ query.owner }}</td>
+		<td>{{ query.date }}</td>
+		<td>{{ query.parent }}</td>
+		<td>{{ query.statement }}</td>
+	</tr>
+	{% endfor %}
+</table>
+
+{% endblock %}
