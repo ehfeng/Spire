@@ -6,6 +6,8 @@ import requests
 from flask import Flask, Blueprint, abort, jsonify, request, session
 from celery import Celery
 
+from queryparser import simpleSQL
+
 ### Helper Functions ###
 
 def unicode_csv_reader(unicode_csv_data, dialect=csv.excel, **kwargs):
