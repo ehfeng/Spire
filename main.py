@@ -6,7 +6,7 @@ from elasticsearch import Elasticsearch
 from flask import abort, Blueprint, Flask, jsonify, render_template, request, session
 import requests
 
-from queryparser import simpleSQL
+from queryparser import queryToParse
 
 ### Constants ###
 
@@ -114,7 +114,7 @@ def main():
 
 @app.route("/upload")
 def upload():
-    res = upload_hive_queries.delay('https://dl.dropbox.com/s/je8k1xr9s2bk3w8/Hive%20Queries%20Sample.csv')
+    res = upload_hive_queries.delay('https://dl.dropbox.com/s/kgd0map2xpqytsl/Hive%20Queries.csv')
     return res.task_id
 
 @app.route("/upload/<task_id>")

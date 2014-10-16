@@ -19,11 +19,12 @@ from pyparsing import Literal, CaselessLiteral, Word, Upcase, delimitedList, Opt
 selectStmt = Forward()
 selectToken = Keyword("select", caseless=True)
 fromToken = Keyword("from", caseless=True)
+asToken = Keyword("as", caseless=True)
 
 colIdent = Word( alphas + "$", alphanums + "_$()" ).setName("column identifier")
 tableIdent = Word( alphas, alphanums + "_$" ).setName("table identifier")
 columnName = Group (Upcase( delimitedList( colIdent, ".", combine=True )
-                      + Optional(CaselessLiteral("as") + colIdent)) )
+                      + Optional(asToken + colIdent)) )
 columnNameList = Group( delimitedList( columnName ) )
 tableName = Upcase( delimitedList( tableIdent, ".", combine=True ) )
 
@@ -60,12 +61,10 @@ selectStmt << ( selectToken +
   (("(" + selectStmt + Optional(")")) | tableName.setResultsName( "tables", listAllMatches=True )) ) +
   Optional(SkipTo(CaselessLiteral("where"), include=True, failOn=")") + whereExpression) )
 
-simpleSQL = selectStmt
+queryToParse = selectStmt
 
 # define Oracle comment format, and ignore them
 oracleSqlComment = "--" + restOfLine
-simpleSQL.ignore( oracleSqlComment )
-
-
+queryToParse.ignore( oracleSqlComment )
 
 

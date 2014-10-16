@@ -1,9 +1,9 @@
-from queryparser import simpleSQL
+from queryparser import queryToParse
 
 def test( str ):
     #print(str,"->")
     try:
-        tokens = simpleSQL.parseString( str )
+        tokens = queryToParse.parseString( str )
         print("tokens = ",        tokens)
         print()
         print("tokens.columns =", tokens.columns)
