@@ -5,10 +5,11 @@
 # TODO:
 # - UDFs (i.e. $DATE(0)) x
 # - Column and table aliases x
-# - joins (add join keyword) X
+# - joins (add join keyword) x
 # - subqueries (recurse selectStmt) x
 # - support for expressions in columns (ex. col1 + col2)
 # - support for case statements
+# - group by
 #
 from pyparsing import Literal, CaselessLiteral, Word, Upcase, delimitedList, Optional, \
     Combine, Group, alphas, nums, alphanums, ParseException, Forward, oneOf, quotedString, \
@@ -89,7 +90,8 @@ test( """SELECT A as cola, B as colb
             (select * from table1 where innerwhere="subsubquery") a
           join table2 b on a.col1=b.col1) a 
         left outer join table3 b 
-        on a.col1 = b.col1 where test1=1""")
+        on a.col1 = b.col1 where test1=1
+        group by A, B """)
 
 
 
