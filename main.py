@@ -103,8 +103,12 @@ def upload_hive_queries(direct_link):
 def main():
     if request.method == "POST":
         q=request.form['q']
-        queries=Query.search(q=q)['hits']['hits']
-        queries=[query['_source'] for query in queries]
+        results=Query.search(q=q)['hits']['hits']
+        queries = []
+        for result in results:
+            query = {'id': result['_id']}
+            query.update(result['_source'])
+            queries.append(query)
         return render_template('main.html', q=q, queries=queries)
     return render_template('main.html')
 
@@ -117,10 +121,10 @@ def upload():
 def upload_result(task_id):
     task = upload_hive_queries.AsyncResult(task_id)
     if task.ready():
-        retval = task.get(timeout=1)
-        return retval
+        # retval = task.get(timeout=1)
+        return repr(True)
     else:
-        return False
+        return repr(False)
 
 
 if __name__ == "__main__":

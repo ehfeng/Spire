@@ -19,7 +19,9 @@
 		<td>{{ query.owner }}</td>
 		<td>{{ query.date }}</td>
 		<td>{{ query.parent }}</td>
-		<td>{{ query.statement }}</td>
+		<td>
+			<a href="https://analytics.dropbox.com/hivepad/query/{{ query.id }}">{{ query.statement }}</a>
+		</td>
 	</tr>
 	{% endfor %}
 </table>

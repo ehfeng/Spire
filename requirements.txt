@@ -3,3 +3,4 @@ flask
 elasticsearch
 celery[redis]
 redis
+pyparsing
