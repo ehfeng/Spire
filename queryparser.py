@@ -5,10 +5,11 @@
 # TODO:
 # - UDFs (i.e. $DATE(0)) x
 # - Column and table aliases x
-# - joins (add join keyword) X
+# - joins (add join keyword) x
 # - subqueries (recurse selectStmt) x
 # - support for expressions in columns (ex. col1 + col2)
 # - support for case statements
+# - group by
 #
 from pyparsing import Literal, CaselessLiteral, Word, Upcase, delimitedList, Optional, \
     Combine, Group, alphas, nums, alphanums, ParseException, Forward, oneOf, quotedString, \
@@ -64,7 +65,6 @@ simpleSQL = selectStmt
 # define Oracle comment format, and ignore them
 oracleSqlComment = "--" + restOfLine
 simpleSQL.ignore( oracleSqlComment )
-
 
 
 
