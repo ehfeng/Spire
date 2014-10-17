@@ -1,28 +1,33 @@
 from queryparser import queryToParse
+from pyparsing import ParseException
 
 def test( str ):
     #print(str,"->")
     try:
         tokens = queryToParse.parseString( str )
-        print("tokens = ",        tokens)
-        print()
-        print("tokens.columns =", tokens.columns)
-        print("tokens.tables =",  tokens.tables)
-        print("tokens.where =", tokens.where)
+        print "tokens = ",        tokens
+        print
+        print "tokens.columns =", tokens.columns
+        print "tokens.tables =",  tokens.tables
+        print "tokens.where =", tokens.where
+        print "tokens.groupby =", tokens.groupby
+        print "tokens.having =", tokens.having
     except ParseException as err:
         print(" "*err.loc + "^\n" + err.msg)
         print(err)
-    print()
-    print()
-    print()
+    print
+    print
+    print
 
-test( "SELECT A as a, B as b, C as c from (select * from INNERTABLE where innerx = 1 and innery = 2) abc where x = 1 and y = 2" )
-test( "Select A from (select * from Sys.dual where a in ('RED','GREEN','BLUE') and b in (10,20,30))" )
+#test( "SELECT A as a, B as b, C as c from (select * from INNERTABLE where innerx = 1 and innery = 2) abc where x = 1 and y = 2" )
+#test( "Select colA from (select * from Sys.dual where a in ('RED','GREEN','BLUE') and b in (10,20,30)) group by A, B" )
 
-test( """SELECT A as cola, B as colb 
+test( """SELECT x + y as testopcol, col2 as col
         from (select a from 
-            (select * from table1 where innerwhere="subsubquery") a
+            (select * from table1 where innerwhere="subsubquery" and innerwhere2 = "test") a
           join table2 b on a.col1=b.col1) a 
         left outer join table3 b 
-        on a.col1 = b.col1 where test1=1""")
+        on a.col1 = b.col1 where test1=1
+        group by col2 + col1, col3
+        having col2 < 0 and x+y > 5""")
 
