@@ -1,33 +1,89 @@
 from queryparser import queryToParse
+from main import Query
 from pyparsing import ParseException
+import csv, codecs, cStringIO
 
-def test( str ):
-    #print(str,"->")
-    try:
-        tokens = queryToParse.parseString( str )
-        print "tokens = ",        tokens
-        print
-        print "tokens.columns =", tokens.columns
-        print "tokens.tables =",  tokens.tables
-        print "tokens.where =", tokens.where
-        print "tokens.groupby =", tokens.groupby
-        print "tokens.having =", tokens.having
-    except ParseException as err:
-        print(" "*err.loc + "^\n" + err.msg)
-        print(err)
-    print
-    print
-    print
+class UTF8Recoder:
+    """
+    Iterator that reads an encoded stream and reencodes the input to UTF-8
+    """
+    def __init__(self, f, encoding):
+        self.reader = codecs.getreader(encoding)(f)
 
-#test( "SELECT A as a, B as b, C as c from (select * from INNERTABLE where innerx = 1 and innery = 2) abc where x = 1 and y = 2" )
-#test( "Select colA from (select * from Sys.dual where a in ('RED','GREEN','BLUE') and b in (10,20,30)) group by A, B" )
+    def __iter__(self):
+        return self
 
-test( """SELECT x + y as testopcol, col2 as col
-        from (select a from 
-            (select * from table1 where innerwhere="subsubquery" and innerwhere2 = "test") a
-          join table2 b on a.col1=b.col1) a 
-        left outer join table3 b 
-        on a.col1 = b.col1 where test1=1
-        group by col2 + col1, col3
-        having col2 < 0 and x+y > 5""")
+    def next(self):
+        return self.reader.next().encode("utf-8")
 
+class UnicodeReader:
+    """
+    A CSV reader which will iterate over lines in the CSV file "f",
+    which is encoded in the given encoding.
+    """
+
+    def __init__(self, f, dialect=csv.excel, encoding="utf-8", **kwds):
+        f = UTF8Recoder(f, encoding)
+        self.reader = csv.reader(f, dialect=dialect, **kwds)
+
+    def next(self):
+        row = self.reader.next()
+        return [unicode(s, "utf-8") for s in row]
+
+    def __iter__(self):
+        return self
+
+class UnicodeWriter:
+    """
+    A CSV writer which will write rows to CSV file "f",
+    which is encoded in the given encoding.
+    """
+
+    def __init__(self, f, dialect=csv.excel, encoding="utf-8", **kwds):
+        # Redirect output to a queue
+        self.queue = cStringIO.StringIO()
+        self.writer = csv.writer(self.queue, dialect=dialect, **kwds)
+        self.stream = f
+        self.encoder = codecs.getincrementalencoder(encoding)()
+
+    def writerow(self, row):
+        self.writer.writerow([s.encode("utf-8") for s in row])
+        # Fetch UTF-8 output from the queue ...
+        data = self.queue.getvalue()
+        data = data.decode("utf-8")
+        # ... and reencode it into the target encoding
+        data = self.encoder.encode(data)
+        # write to the target stream
+        self.stream.write(data)
+        # empty queue
+        self.queue.truncate(0)
+
+    def writerows(self, rows):
+        for row in rows:
+            self.writerow(row)
+
+def test():
+    results = Query.search(size=999999)['hits']['hits']
+
+    worked_file = open('working/worked.csv', 'w')
+    failed_file = open('working/failed.csv', 'w')
+    worked_csv = UnicodeWriter(worked_file)
+    failed_csv = UnicodeWriter(failed_file)
+    worked=0
+    failed=0
+
+    for result in results:
+        query_str = result['_source']['statement'].encode('utf-8', errors='replace')
+        try:
+            queryToParse.parseString(query_str)
+            worked += 1
+            worked_csv.writerow([result['_id'], result['_source']['statement']])
+        except:
+            failed += 1
+            failed_csv.writerow([result['_id'], result['_source']['statement']])
+    print "Total worked: " + str(worked)
+    print "Total failed: " + str(failed)
+
+
+if __name__ == "__main__":
+    test()

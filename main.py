@@ -52,8 +52,8 @@ class Query:
         return es.exists(index=ES_INDEX, doc_type=cls.doc_type, **kwargs)
 
     @classmethod
-    def get(cls, **kwargs):
-        return es.get(index=ES_INDEX, doc_type=cls.doc_type, **kwargs)
+    def get(cls, id=id, **kwargs):
+        return es.get(index=ES_INDEX, doc_type=cls.doc_type, id=id, **kwargs)
 
     @classmethod
     def create(cls, **kwargs):
@@ -96,6 +96,11 @@ def upload_hive_queries(direct_link):
                 query_kwargs['date']=datetime.datetime.fromtimestamp(int(float(row[5]))).strftime('%Y-%m-%d')
                 Query.create(id=qid, body=query_kwargs)
         return True
+
+@celery.task(name="task.parse_hive_queries")
+def parse_hive_queries():
+    return None
+
 
 ### Views ###
 

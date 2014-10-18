@@ -4,3 +4,4 @@ lib
 dump.rdb
 *.pyc
 .Python
+working/*

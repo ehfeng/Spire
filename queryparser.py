@@ -22,14 +22,14 @@ fromToken = Keyword("from", caseless=True)
 asToken = Keyword("as", caseless=True)
 
 columnName = Forward()
-colIdent = Upcase(Word( alphas + "$", alphanums + "_$()" ).setName("column identifier"))
+colIdent = Upcase(Word( alphas + "$(*)", alphanums + "_$()" ).setName("column identifier"))
 
 arithOp  = Word( "+-*/", max=1 )   # arithmetic operators
 
-columnName << (delimitedList( colIdent, ".", combine=True ) 
+columnName << (delimitedList( colIdent, ".", combine=True )
 				+ ZeroOrMore(arithOp + delimitedList( colIdent, ".", combine=True )))
 
-columnNameList = delimitedList( columnName.setResultsName("columns", listAllMatches=True) 
+columnNameList = delimitedList( columnName.setResultsName("columns", listAllMatches=True)
 				+ Optional(asToken + colIdent) )
 
 tableIdent = Word( alphas, alphanums + "_$" ).setName("table identifier")
