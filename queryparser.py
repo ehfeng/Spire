@@ -22,7 +22,7 @@ fromToken = Keyword("from", caseless=True)
 asToken = Keyword("as", caseless=True)
 
 columnName = Forward()
-colIdent = Upcase(Word( alphas + "$(*)", alphanums + "_$()" ).setName("column identifier"))
+colIdent = Upcase(Word( alphanums + "_$()" ).setName("column identifier"))
 
 arithOp  = Word( "+-*/", max=1 )   # arithmetic operators
 
@@ -65,7 +65,7 @@ groupByList = delimitedList( columnName.setResultsName("groupby", listAllMatches
 
 # define the grammar
 selectStmt << ( selectToken +
-  ( '*' | columnNameList ) +
+  ( Optional(colIdent + '.') + '*' | columnNameList ) +
   fromToken +
   ( tableName.setResultsName("tables", listAllMatches=True )  | ("(" + selectStmt + Optional(")")) ) +
   ZeroOrMore( SkipTo(CaselessLiteral("join"), include=True, failOn="where") +
@@ -79,5 +79,4 @@ queryToParse = selectStmt
 # define Oracle comment format, and ignore them
 oracleSqlComment = "--" + restOfLine
 queryToParse.ignore( oracleSqlComment )
-
 
