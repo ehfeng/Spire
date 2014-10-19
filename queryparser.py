@@ -83,5 +83,3 @@ queryToParse = selectStmt
 oracleSqlComment = "--" + restOfLine
 queryToParse.ignore( oracleSqlComment )
 
-print queryToParse.parseString("select x+y/z from test.table where x + y/z > 1")
-
