@@ -63,7 +63,7 @@ class UnicodeWriter:
             self.writerow(row)
 
 def test():
-    results = Query.search(size=999999)['hits']['hits']
+    results = Query.search(size=100)['hits']['hits']
 
     worked_file = open('working/worked.csv', 'w')
     failed_file = open('working/failed.csv', 'w')
@@ -81,6 +81,7 @@ def test():
         except:
             failed += 1
             failed_csv.writerow([result['_id'], result['_source']['statement']])
+
     print "Total worked: " + str(worked)
     print "Total failed: " + str(failed)
 

@@ -101,14 +101,13 @@ def upload_hive_queries(direct_link):
 def parse_hive_queries():
     return None
 
-
 ### Views ###
 
-@app.route("/", methods=["GET", "POST"])
+@app.route("/")
 def main():
-    if request.method == "POST":
-        q=request.form['q']
-        results=Query.search(q=q)['hits']['hits']
+    if request.args.has_key('q'):
+        q=request.args['q']
+        results=Query.search(q=q, sort=['date:desc'])['hits']['hits']
         queries = []
         for result in results:
             query = {'id': result['_id']}
@@ -119,7 +118,7 @@ def main():
 
 @app.route("/upload")
 def upload():
-    res = upload_hive_queries.delay('https://dl.dropbox.com/s/kgd0map2xpqytsl/Hive%20Queries.csv')
+    res = upload_hive_queries.delay('https://dl.dropbox.com/s/05wqa9hciakodnf/feng.result1597952.csv?dl=0')
     return res.task_id
 
 @app.route("/upload/<task_id>")
