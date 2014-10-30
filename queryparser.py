@@ -3,22 +3,18 @@
 # Takes the simpleSQL example and adapts it for use with Hive queries
 #
 # TODO:
-# - UDFs (i.e. $DATE(0)) x
-# - Column and table aliases x
-# - joins (add join keyword) x
-# - subqueries (recurse selectStmt) x
-# - support for arithmetic expressions in columns (ex. col1 + col2) x
-# - support for if/case/etc. statements x
-# - group by / having x
+# cast(variable as variabletype)
+# group by and having acting up :(
+# joins with complicated on statements  
 #
-from pyparsing import Literal, CaselessLiteral, Word, Upcase, delimitedList, Optional, \
-    Combine, Group, alphas, nums, alphanums, ParseException, Forward, oneOf, quotedString, \
+from pyparsing import CaselessLiteral, Word, delimitedList, Optional, \
+    Combine, Group, nums, alphanums, Forward, oneOf, quotedString, \
     ZeroOrMore, restOfLine, Keyword, SkipTo, OneOrMore
 
 # define base types and operators
 E = CaselessLiteral("E")
 arithop  = Word( "+-*/", max=1 )   # arithmetic operators
-binop = oneOf("= != < > >= <= eq ne lt le gt ge", caseless=True)
+binop = oneOf("= != <> < > >= <= eq ne lt le gt ge", caseless=True)
 arithSign = Word("+-",exact=1)
 realNum = Combine( Optional(arithSign) + ( Word( nums ) + "." + Optional( Word(nums) )  |
                                                          ( "." + Word(nums) ) ) +
@@ -26,39 +22,53 @@ realNum = Combine( Optional(arithSign) + ( Word( nums ) + "." + Optional( Word(n
 intNum = Combine( Optional(arithSign) + Word( nums ) +
             Optional( E + Optional("+") + Word(nums) ) )
 
-# define SQL tokens
-selectStmt = Forward()
+# define SQL tokens and keywords
 selectToken = Keyword("select", caseless=True)
 fromToken = Keyword("from", caseless=True)
+joinToken = Keyword("join", caseless=True)
+whereToken = Keyword("where", caseless=True)
+groupToken = Keyword("group by", caseless=True)
+havingToken = Keyword("having", caseless=True)
 asToken = Keyword("as", caseless=True)
 
-colIdent = Upcase(Word( alphanums + "_$()." ).setName("column identifier"))
-columnName = Combine( ( CaselessLiteral("case when") + SkipTo(CaselessLiteral("end"), include=True) ) |
-               ( Optional("(") + colIdent + Optional("(") + ZeroOrMore((arithop|binop) + Optional("(") + colIdent + Optional(")")) + Optional(")") )
-             , adjacent=False )
+caseStart = Keyword("case", caseless=True)
+caseEnd = Keyword("end", caseless=True)
+distinct_ = Keyword("distinct", caseless=True)
+and_ = Keyword("and", caseless=True)
+or_ = Keyword("or", caseless=True)
+in_ = Keyword("in", caseless=True)
+is_ = Keyword("is", caseless=True)
+not_ = Keyword("not", caseless=True)
+between_ = Keyword("between", caseless=True)
+null = Keyword("null", caseless=True)
+
+#query elements
+selectStmt = Forward()
+
+colIdent = Word( alphanums + "_$().*[]'" ).setName("column identifier")
+columnName = Combine( (caseStart + SkipTo(caseEnd, include=True)) |
+                      SkipTo(",", failOn=asToken) | SkipTo(asToken) | SkipTo(fromToken) | SkipTo(havingToken)
+              , adjacent=False)
 
 columnNameList = delimitedList( columnName.setResultsName("columns", listAllMatches=True)
 				+ Optional(asToken + colIdent) )
 
-tableName = Upcase(Word( alphanums + "_$." ).setName("table identifier"))
+tableName = Word( alphanums + "_$." ).setName("table identifier")
 
 whereExpression = Forward()
 havingExpression = Forward()
-and_ = Keyword("and", caseless=True)
-or_ = Keyword("or", caseless=True)
-in_ = Keyword("in", caseless=True)
 
-whereColumn = (( CaselessLiteral("case when") + SkipTo(CaselessLiteral("end"), include=True)) |
+whereColumn = (( caseStart + SkipTo(caseEnd, include=True)) |
                ( Optional("(") + colIdent + Optional("(") + ZeroOrMore(arithop + Optional("(") + colIdent + Optional(")")) + Optional(")") )
               )
 
-columnRval = realNum | intNum | Upcase(quotedString) | whereColumn # need to add support for alg expressions
+columnRval = realNum | intNum | quotedString | whereColumn # need to add support for alg expressions
 
 condition = Group(
   ( whereColumn + binop + columnRval ) |
-  ( whereColumn + in_ + "(" + delimitedList( columnRval ) + ")" ) |
-  ( whereColumn + in_ + "(" + selectStmt + ")" ) |
-  ( whereColumn + "between" + columnRval + "and" + columnRval) |
+  ( whereColumn + Optional(not_) + in_ + "(" + delimitedList( columnRval ) + ")" ) |
+  ( whereColumn + is_ + Optional(not_) + null ) |
+  ( whereColumn + between_ + columnRval + and_ + columnRval) |
   ( "(" + whereExpression + ")" )
   )
 whereExpression << condition.setResultsName("where", listAllMatches=True) + ZeroOrMore( ( and_ | or_ ) + whereExpression )
@@ -68,14 +78,14 @@ groupByList = delimitedList( columnName.setResultsName("groupby", listAllMatches
 
 # define the grammar
 selectStmt << ( selectToken +
-  ( Optional(colIdent + '.') + '*' | columnNameList ) +
+  ( Optional(distinct_) + columnNameList ) +
   fromToken +
   ( tableName.setResultsName("tables", listAllMatches=True )  | ("(" + selectStmt + Optional(")")) ) +
-  ZeroOrMore( SkipTo(CaselessLiteral("join"), include=True, failOn="where") +
-  			(("(" + selectStmt + Optional(")")) | tableName.setResultsName( "tables", listAllMatches=True )) ) +
-  Optional(SkipTo(CaselessLiteral("where"), include=True, failOn=")") + whereExpression) +
-  Optional(SkipTo(CaselessLiteral("group by"), include=True, failOn=")") + groupByList) + 
-  Optional(SkipTo(CaselessLiteral("having"), include=True, failOn=")") + havingExpression))
+  ZeroOrMore( SkipTo(joinToken, include=True, failOn=whereToken) +
+  			(("(" + selectStmt + Optional(")")) | tableName.setResultsName("tables", listAllMatches=True)) ) +
+  Optional(SkipTo(whereToken, include=True, failOn=")") + whereExpression) +
+  Optional(SkipTo(groupToken, include=True, failOn=")") + groupByList) + 
+  Optional(SkipTo(havingToken, include=True, failOn=")") + havingExpression))
 
 queryToParse = selectStmt
 
