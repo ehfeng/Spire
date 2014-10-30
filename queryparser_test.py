@@ -81,6 +81,7 @@ def test():
         except:
             failed += 1
             failed_csv.writerow([result['_id'], result['_source']['statement']])
+
     print "Total worked: " + str(worked)
     print "Total failed: " + str(failed)
 
