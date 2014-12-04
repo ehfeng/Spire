@@ -116,10 +116,12 @@ def main():
         return render_template('main.html', q=q, queries=queries)
     return render_template('main.html')
 
-@app.route("/upload")
+@app.route("/upload", methods=['GET', 'POST'])
 def upload():
-    res = upload_hive_queries.delay('https://dl.dropbox.com/s/05wqa9hciakodnf/feng.result1597952.csv?dl=0')
-    return res.task_id
+    if request.method == 'POST':
+        res = upload_hive_queries.delay(request.form['url'])
+        return res.task_id
+    return render_template('upload.html')
 
 @app.route("/upload/<task_id>")
 def upload_result(task_id):

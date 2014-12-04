@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Importer{% endblock %}
+{% block headscript %}
+	<script type="text/javascript" src="https://www.dropbox.com/static/api/2/dropins.js"
+	id="dropboxjs" data-app-key="frne0rvi8l497tq"></script>
+{% endblock %}
+{% block main %}
+<h1>Upload</h1>
+<br>
+<div id="container"></div>
+<div id="success"></div>
+
+<script type="text/javascript">
+var successDiv = document.getElementById("success");
+
+var uploadStarted = function(e) {
+	console.log(e.target.responseText);
+}
+
+options = {
+    success: function(files) {
+    	var form = new FormData();
+    	form.append('url', files[0].link)
+    	var xhr = new XMLHttpRequest();
+    	xhr.onload = uploadStarted;
+    	xhr.open('POST', '/upload', true);
+    	xhr.send(form);
+    },
+    cancel: function() {
+    	console.log('canceled')
+    },
+    linkType: "direct",
+    multiselect: false,
+    extensions: ['.csv'],
+};
+var button = Dropbox.createChooseButton(options);
+document.getElementById("container").appendChild(button);
+</script>
+{% endblock %}

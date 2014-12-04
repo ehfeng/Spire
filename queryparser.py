@@ -5,7 +5,7 @@
 # TODO:
 # cast(variable as variabletype)
 # group by and having acting up :(
-# joins with complicated on statements  
+# joins with complicated on statements
 #
 from pyparsing import CaselessLiteral, Word, delimitedList, Optional, \
     Combine, Group, nums, alphanums, Forward, oneOf, quotedString, \
