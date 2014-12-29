@@ -17,5 +17,21 @@ Starting the server
 -------------------
 1. Start Elasticsearch server `elasticsearch`
 2. Start Redis Server `redis-server`
-3. Start the celery worker `celery -A main.celery worker`
-4. Run `python main.py`
+3. Start the celery worker `celery -A main.celery worker` in virtual environment
+4. Run `python main.py` in virtual environment
+
+Getting the data
+----------------
+select
+  a.id as id,
+  a.owner as owner,
+  a.name as name,
+  b.name as parent_name,
+  a.statement as statement,
+  a.start_ts as start_ts,
+  a.heartbeat_ts as end_ts
+from (
+  select id, parent, owner, name, statement, start_ts, heartbeat_ts from hp_query where result=0 and parent is not null and statement not like 'explain %' and start_ts>=unix_timestamp($DATE(-28), 'yyyy-MM-dd')
+) a join (
+  select id, name from hp_query where parent is null
+) b on a.parent=b.id
